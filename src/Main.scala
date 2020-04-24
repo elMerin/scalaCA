@@ -1,3 +1,5 @@
+
+
 import scala.util.Random
 import javafx.application.Application
 import javafx.event.ActionEvent
@@ -30,33 +32,36 @@ import javafx.scene.control.Slider
 import javafx.beans.value.ChangeListener
 import javafx.beans.value.ObservableValue
 import javafx.scene.control.Label
-
-
 import java.io._
 
 
 
 class MainWindow extends Application{
-  
-    var board = sampleConfig.rpentomino
     
+    //sets board to r-pentomino configuration
+    var board = Map[(Int,Int),core.Cell]((91,50) -> core.Cell(false),(90,51) -> core.Cell(false),(91,51) -> core.Cell(false),(91,52) -> core.Cell(false),(92,52) -> core.Cell(false))   
+    
+    //loads map
     val ois = new ObjectInputStream(new FileInputStream("maps/config"))
     val mapConfig = ois.readObject.asInstanceOf[Array[Array[core.mapCell]]]
     ois.close
     val map = mapConfig
     
+    //defines initial timeline for CA to run on
     var runLoop = new Timeline();
     runLoop.setCycleCount(Animation.INDEFINITE)
     var running = false
     
+    //JavaFX stuff
     val root = new StackPane
-    val scene = new Scene(root,1920,1080) 
+    val scene = new Scene(root,1400,1000) 
     scene.setRoot(root)
     
+    //one grid is for map, one is for cells
     val grid = new Pane
     val grid2 = new Pane
     
-      
+    //called from main method  
     override def start(stage: Stage) : Unit = {
 
       stage.setScene(scene)
@@ -66,6 +71,7 @@ class MainWindow extends Application{
       root.getChildren.add(grid)
       
       
+      //menu stuff
       val menu = new HBox()
             
       val playBtn = new Button("Start")
@@ -96,7 +102,7 @@ class MainWindow extends Application{
       slider.setMinSize(200, 50)
       slider.setStyle("-fx-font-size: 20pt")
       HBox.setMargin(slider, new Insets(20, 20, 0, 0))
-
+      //when slider is changed reconfigure timeline
       slider.valueProperty().addListener(new ChangeListener[Number]() {
         override def changed(observableValue: ObservableValue[_ <: Number], oldValue: Number, newValue: Number): Unit = {
           setTime((newValue.doubleValue().doubleValue()-1).abs)
@@ -106,7 +112,8 @@ class MainWindow extends Application{
       
       root.getChildren.add(menu)
      
-      def drawMap(){
+      //called to draw map. only needed once because it is static
+      def drawMap():Unit={
         grid2.getChildren.clear()
         for {
            i <- 0 to core.mapWidth - 1
@@ -125,6 +132,8 @@ class MainWindow extends Application{
       
       drawMap()
       drawGrid()
+      
+      //actions for UI defined above
       playBtn.setOnAction((e: ActionEvent) => {
           if(running){
             running = false
@@ -146,15 +155,18 @@ class MainWindow extends Application{
 
       stage.show()
       
-    
+      //handler for mouse input, which creates and removes cells
       val eventHandler: EventHandler[MouseEvent] =
       new EventHandler[MouseEvent]() {
         override def handle(e: MouseEvent): Unit = {
           if(e.getButton() == MouseButton.PRIMARY)
+            //create cell without virus
             board = board + ((((e.getX/7).intValue(),(e.getY/7).intValue()),core.Cell(false)))
           else if(e.getButton() == MouseButton.SECONDARY)
+            //create cell with virus
             board = board + ((((e.getX/7).intValue(),(e.getY/7).intValue()),core.Cell(true)))        
           else if(e.getButton() == MouseButton.MIDDLE)
+            //remove cell
             board = board - (((e.getX/7).intValue(),(e.getY/7).intValue()))
           drawGrid()
         }
@@ -164,17 +176,19 @@ class MainWindow extends Application{
     scene.addEventHandler(MouseEvent.MOUSE_CLICKED, eventHandler)
     scene.addEventHandler(MouseEvent.MOUSE_DRAGGED, eventHandler)
 
-
+    //set timeline to initial speed 
     setTime((0.95.doubleValue().doubleValue()-1).abs)           
     }
     
-    def setTime(seconds:Double){
+    //set how often board updates
+    def setTime(seconds:Double):Unit={
        if (runLoop != null) {
          runLoop.stop();
        }
        runLoop = new Timeline(new KeyFrame(Duration.seconds(seconds), new EventHandler[ActionEvent]() {
             @Override
-            def handle(event:ActionEvent) {
+            def handle(event:ActionEvent):Unit={
+              //if running call evolve with future so it runs concurrently
               if (running){
                 val f = Future {
                   core.evolve(board, map)
@@ -191,8 +205,8 @@ class MainWindow extends Application{
     }
         
         
-        
-      def drawGrid(){
+      //called to draw grid. used after every evolution of the CA  
+      def drawGrid():Unit={
         grid.getChildren.clear()
         board.map(x=>{              
               val rect = new Rectangle(7,7)
@@ -212,12 +226,9 @@ class MainWindow extends Application{
 object Main {
 
   def main(args: Array[String]): Unit = {
+    //Launches JavaFX application
     Application.launch(classOf[MainWindow], args: _*)
-
     
-  }
-  
-  
-  
+  } 
   
 }
