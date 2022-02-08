@@ -30,13 +30,14 @@ object core {
       
       //filters the cells and decides which ones live/die
       def boardFilter(c:((Int,Int),Cell)):Boolean ={
-        if(c._1._1 > mapWidth-2 || c._1._2-2 > mapHeight || c._1._1 < 1 || c._1._2 < 1) return false //avoid cell outside bounds    
+        if(c._1._1 > mapWidth-2 || c._1._2-2 > mapHeight || c._1._1 < 1 || c._1._2 < 1) return false //avoid cell outside bounds  
+        //lazy val nb = neighbours(c) filter {(cell:((Int,Int),Cell))=>board.contains(cell._1)} map {(cell:((Int,Int),Cell)) => board(cell._1)}
         lazy val nb = neighbours(c) collect {case cell:((Int,Int),Cell) if(board.contains(cell._1)) => ((cell._1),board(cell._1))}
         lazy val waterNb = mapNeighbours(map,map(c._1._1)(c._1._2)).filter(_.t == "w" ) //get number of neighbouring water cells
         lazy val count = nb.size
         lazy val waterCount = waterNb.size
         lazy val aquatic = r.nextInt(2) //decides whether cell can survive on water
-        lazy val vEffect = r.nextInt(1000)       
+        lazy val vEffect = r.nextInt(1000) //random val to determine if cell dies from virus       
 
         if(board.contains(c._1))
           if (c._2.vi)
@@ -86,10 +87,6 @@ object core {
       newBoard map vMap
       
   }
-  
-
-  
-  
 
 case class Cell(vi:Boolean)  //cell that's part of the CA
 case class mapCell(t:String, x:Int, y:Int) extends Serializable  //cell of the map. t denotes type, x and y denote coordinates
